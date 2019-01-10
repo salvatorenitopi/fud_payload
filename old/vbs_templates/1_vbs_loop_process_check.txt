@@ -1,0 +1,32 @@
+
+Dim directory
+Dim target
+Dim timeout_sec
+
+directory = ""
+target = "notepad.exe"
+timeout_sec =  10
+
+
+Do While (True) 
+
+
+	Set objWMIService = GetObject("winmgmts:" _
+	    & "{impersonationLevel=impersonate}!\\" & "." & "\root\cimv2")
+	Set colProcessList = objWMIService.ExecQuery _
+	    ("Select Name from Win32_Process WHERE Name LIKE '" & target & "%'")
+
+	If colProcessList.count>0 then
+	    msgbox target & " is running"
+	else
+	    msgbox target & " is NOT running"
+	End if 
+
+	Set objWMIService = Nothing
+	Set colProcessList = Nothing
+
+	WScript.Sleep( timeout_sec * 1000 )
+
+Loop
+
+

